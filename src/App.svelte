@@ -7,6 +7,7 @@
   let processedImageUrl: string | null = null;
   let imageName: string | null = null;
   let loadingState: boolean = false;
+  let blurRadius: number = BlurRadius.Default;
 
   const uploadImage = async () => {
     if (processedImageUrl) {
@@ -44,9 +45,8 @@
     <header
       class="sticky top-0 flex h-12 w-full justify-between bg-neutral-900 px-4 py-2 text-white">
       <!-- Title -->
-      <h1
-        class="font-title inline-block bg-gradient-to-r from-pink-600 via-neutral-50 to-yellow-400 bg-clip-text text-2xl font-semibold text-transparent">
-        MinstaFit
+      <h1 class="font-title text-2xl font-semibold">
+        <span class="text-pink-600">Minsta</span>Fit
       </h1>
       <div class="flex items-stretch font-mono">
         <!-- Upload button -->
@@ -87,7 +87,20 @@
     <!-- Customization toolbar -->
     <footer
       class="sticky bottom-0 h-14 w-full bg-neutral-900 px-4 py-2 text-white">
-      Customization options
+      <div class="flex items-center space-x-5">
+        <input
+          type="range"
+          min={BlurRadius.Min}
+          max={BlurRadius.Max}
+          bind:value={blurRadius}
+          class="h-2 grow cursor-pointer rounded-lg accent-pink-600" />
+        <input
+          type="number"
+          min={BlurRadius.Min}
+          max={BlurRadius.Max}
+          bind:value={blurRadius}
+          class="w-10 border-b-4 border-pink-600 bg-neutral-900 px-1 py-1 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+      </div>
     </footer>
   </div>
 </main>
