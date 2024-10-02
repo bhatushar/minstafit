@@ -16,6 +16,8 @@ interface Coordinate {
   y: number;
 }
 
+let origImg: any, bgImgMin: any, fgImgMin: any;
+
 /**
  * Get dimension such that it meets Instagram's accepted ratio.
  *
@@ -78,52 +80,54 @@ const getCenterOffset = (fg: Dimension, bg: Dimension): Coordinate => {
 export const processImage = async (
   imageUrl: string,
   blurRadius: number,
+  newImage: boolean = false,
+  forDownload: boolean = false,
 ): Promise<string | null> => {
   if (blurRadius < BlurRadius.Min || BlurRadius.Max < blurRadius) {
     console.error(`Blur radius out of bounds: ${blurRadius}`);
     return null;
   }
   try {
-    const [origImg, jimpImg] = await Promise.all([
-      Jimp.read(imageUrl),
-      Jimp.read(imageUrl),
-    ]);
+    if (newImage) origImg = await Jimp.read(imageUrl);
+    if (newImage || forDownload) fgImgMin = origImg.clone();
+    if (!forDownload) fgImgMin.resize({ w: 1080 });
+    bgImgMin = fgImgMin.clone();
 
     // Blur backgound image
-    jimpImg.blur(blurRadius);
+    bgImgMin.blur(blurRadius);
 
     // Expand image to minimum border requirement
-    const instaRatio = expandToMinBorder(jimpImg.width, jimpImg.height);
-    jimpImg.resize({ w: instaRatio.width, h: instaRatio.height });
+    const instaRatio = expandToMinBorder(fgImgMin.width, fgImgMin.height);
+    bgImgMin.resize({ w: instaRatio.width, h: instaRatio.height });
 
     // Stack foreground in the center of background
     const offset = getCenterOffset(
-      { width: origImg.width, height: origImg.height },
-      { width: jimpImg.width, height: jimpImg.height },
+      { width: fgImgMin.width, height: fgImgMin.height },
+      { width: bgImgMin.width, height: bgImgMin.height },
     );
-    jimpImg.composite(origImg, offset.x, offset.y);
+    bgImgMin.composite(fgImgMin, offset.x, offset.y);
 
     // Crop to IG ratio
-    if (origImg.width > origImg.height) {
+    if (fgImgMin.width > fgImgMin.height) {
       // Landscape photo - remove vertical border
-      jimpImg.crop({
+      bgImgMin.crop({
         x: offset.x,
         y: 0,
-        w: origImg.width,
-        h: jimpImg.height,
+        w: fgImgMin.width,
+        h: bgImgMin.height,
       });
     } else {
       // Portrait photo - remove horizontal border
-      jimpImg.crop({
+      bgImgMin.crop({
         x: 0,
         y: offset.y,
-        w: jimpImg.width,
-        h: origImg.height,
+        w: bgImgMin.width,
+        h: fgImgMin.height,
       });
     }
 
     // Write image
-    const imageBlob = new Blob([await jimpImg.getBuffer("image/jpeg")]);
+    const imageBlob = new Blob([await bgImgMin.getBuffer("image/jpeg")]);
     return URL.createObjectURL(imageBlob);
   } catch (error) {
     console.error(error);
